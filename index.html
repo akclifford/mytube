@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MyTube">
+<meta name="theme-color" content="#0f0f13">
+<title>MyTube</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiTXlUdWJlIiwic2hvcnRfbmFtZSI6Ik15VHViZSIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjMGYwZjEzIiwidGhlbWVfY29sb3IiOiIjMGYwZjEzIn0=">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --accent: #4ECDC4;
+    --bg: #0f0f13;
+    --card: rgba(255,255,255,0.04);
+    --card-border: rgba(255,255,255,0.07);
+    --text: #fff;
+    --text-dim: rgba(255,255,255,0.35);
+    --text-mid: rgba(255,255,255,0.6);
+    --safe-top: env(safe-area-inset-top, 20px);
+    --safe-bottom: env(safe-area-inset-bottom, 20px);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Nunito', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    overflow-x: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* --- SETUP SCREEN --- */
+  .setup-screen {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+  }
+  .setup-screen h1 {
+    font-size: 36px;
+    font-weight: 900;
+    margin-bottom: 8px;
+  }
+  .setup-screen h1 span { color: var(--accent); }
+  .setup-screen p {
+    color: var(--text-dim);
+    font-size: 14px;
+    margin-bottom: 32px;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .setup-field {
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 16px;
+  }
+  .setup-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-mid);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .setup-field input {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--card-border);
+    background: var(--card);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .setup-field input:focus {
+    border-color: var(--accent);
+  }
+  .setup-field input::placeholder { color: rgba(255,255,255,0.2); }
+  .setup-btn {
+    width: 100%;
+    max-width: 400px;
+    padding: 16px;
+    border-radius: 14px;
+    border: none;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: 'Nunito', sans-serif;
+    font-size: 17px;
+    font-weight: 900;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: opacity 0.2s;
+  }
+  .setup-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .setup-btn:active:not(:disabled) { opacity: 0.8; }
+  .setup-hint {
+    margin-top: 20px;
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+    line-height: 1.6;
+    max-width: 400px;
+  }
+  .setup-hint code {
+    background: rgba(255,255,255,0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+
+  /* --- MAIN APP --- */
+  .app { display: flex; flex-direction: column; min-height: 100dvh; }
+
+  .header {
+    padding: calc(var(--safe-top) + 12px) 20px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .header h1 { font-size: 26px; font-weight: 900; letter-spacing: -0.5px; }
+  .header h1 span { color: var(--accent); }
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+  .icon-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 19px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    color: var(--text-dim);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .icon-btn:active { background: rgba(255,255,255,0.1); }
+  .icon-btn.spinning { animation: spin 0.8s ease; }
+  @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 20px;
+    margin-bottom: 18px;
+    flex-shrink: 0;
+  }
+  .tab {
+    padding: 10px 18px;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'Nunito', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    border-radius: 10px;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: rgba(255,255,255,0.08);
+    color: var(--text);
+  }
+
+  /* Content area */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 16px calc(var(--safe-bottom) + 16px);
+  }
+
+  /* Channel grid */
+  .channel-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .channel-card {
+    border-radius: 16px;
+    padding: 16px;
+    cursor: pointer;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-height: 130px;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .channel-card:active { transform: scale(0.96); background: rgba(255,255,255,0.07); }
+  .channel-thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: 32px;
+    object-fit: cover;
+    background: rgba(255,255,255,0.05);
+  }
+  .channel-name {
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Video list */
+  .video-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--card-border);
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .video-item:active { opacity: 0.7; }
+  .video-thumb-wrap {
+    width: 140px;
+    height: 79px;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.05);
+  }
+  .video-thumb-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .video-duration {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 4px;
+  }
+  .video-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+  }
+  .video-title {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .video-meta {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* Section headers */
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+
+  /* Back button */
+  .back-bar {
+    padding: calc(var(--safe-top) + 12px) 20px 12px;
+    flex-shrink: 0;
+  }
+  .back-btn {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 8px 16px;
+    cursor: pointer;
+  }
+  .back-btn:active { background: rgba(255,255,255,0.1); }
+
+  /* Channel detail header */
+  .channel-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 20px 20px;
+    flex-shrink: 0;
+  }
+  .channel-header img {
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+    object-fit: cover;
+  }
+  .channel-header-name { font-size: 22px; font-weight: 900; letter-spacing: -0.3px; }
+  .channel-header-meta { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+
+  /* Player */
+  .player-screen { background: #000; min-height: 100dvh; display: flex; flex-direction: column; }
+  .player-top {
+    padding: calc(var(--safe-top) + 8px) 16px 8px;
+    flex-shrink: 0;
+  }
+  .player-close {
+    background: rgba(255,255,255,0.12);
+    border: none;
+    border-radius: 20px;
+    color: #fff;
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 8px 16px;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+  }
+  .player-video {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    flex-shrink: 0;
+  }
+  .player-video iframe { width: 100%; height: 100%; border: none; }
+  .player-info {
+    padding: 20px 16px;
+    flex: 1;
+  }
+  .player-title { font-size: 18px; font-weight: 800; margin-bottom: 6px; color: #fff; }
+  .player-meta { font-size: 13px; color: rgba(255,255,255,0.4); }
+
+  /* Loading */
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+    gap: 12px;
+  }
+  .loading-dot {
+    width: 8px; height: 8px; border-radius: 4px;
+    background: var(--accent);
+    animation: pulse 1s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+  /* Error state */
+  .error-msg {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .error-msg strong { color: #EF476F; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+    font-size: 14px;
+    line-height: 1.8;
+  }
+  .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script>
+// =============================================
+// MyTube PWA — Core App Logic
+// =============================================
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+const h = (tag, attrs = {}, ...children) => {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(), v);
+    else if (k === 'className') el.className = v;
+    else el.setAttribute(k, v);
+  }
+  for (const c of children) {
+    if (typeof c === 'string') el.appendChild(document.createTextNode(c));
+    else if (c) el.appendChild(c);
+  }
+  return el;
+};
+
+// --- STATE ---
+let state = {
+  screen: 'loading', // loading | setup | home | channel | player
+  config: null,
+  channels: [],
+  bonus: [],
+  activeTab: 'channels',
+  selectedChannel: null,
+  channelVideos: [],
+  playingVideo: null,
+  loading: false,
+  error: null,
+  _nextPageToken: null,
+  _uploadsPlaylistId: null,
+  _loadingMore: false,
+};
+
+// --- STORAGE ---
+const STORAGE_KEY = 'mytube_config';
+
+function loadLocalConfig() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveLocalConfig(cfg) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+}
+
+// --- GOOGLE SHEETS ---
+function sheetTsvUrl(sheetId, tabName) {
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tabName)}&t=${Date.now()}`;
+}
+
+function parseCsv(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = parseCsvLine(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = parseCsvLine(line);
+    const obj = {};
+    headers.forEach((h, i) => { obj[h.replace(/^"|"$/g, '').trim()] = (vals[i] || '').replace(/^"|"$/g, '').trim(); });
+    return obj;
+  }).filter(row => Object.values(row).some(v => v));
+}
+
+function parseCsvLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+      else { inQuotes = !inQuotes; }
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+async function fetchSheetTab(sheetId, tabName) {
+  const url = sheetTsvUrl(sheetId, tabName);
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`Failed to fetch ${tabName} tab (${resp.status})`);
+  const text = await resp.text();
+  return parseCsv(text);
+}
+
+async function fetchConfig(sheetId) {
+  const rows = await fetchSheetTab(sheetId, 'Config');
+  const cfg = {};
+  for (const row of rows) {
+    const key = row['Key'] || row['key'];
+    const val = row['Value'] || row['value'];
+    if (key && val) cfg[key] = val;
+  }
+  return cfg;
+}
+
+async function fetchChannels(sheetId) {
+  const rows = await fetchSheetTab(sheetId, 'Channels');
+  return rows.filter(r => r.channel_id && r.channel_name).map(r => ({
+    id: r.channel_id,
+    name: r.channel_name,
+    thumbnail: r.thumbnail || '',
+    videoCount: parseInt(r.video_count) || 0,
+  }));
+}
+
+async function fetchBonus(sheetId) {
+  const rows = await fetchSheetTab(sheetId, 'Bonus');
+  return rows.filter(r => r.video_id && r.title).map(r => ({
+    id: r.video_id,
+    title: r.title,
+    channelName: r.channel_name || '',
+    thumbnail: r.thumbnail || '',
+    duration: r.duration || '',
+  }));
+}
+
+// --- YOUTUBE API ---
+async function getUploadsPlaylistId(channelId, apiKey) {
+  const chUrl = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${channelId}&key=${apiKey}`;
+  const chResp = await fetch(chUrl);
+  const chData = await chResp.json();
+  if (!chData.items || !chData.items.length) return null;
+  return chData.items[0].contentDetails.relatedPlaylists.uploads;
+}
+
+async function fetchVideoPage(uploadsId, apiKey, pageToken) {
+  let plUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${apiKey}`;
+  if (pageToken) plUrl += `&pageToken=${pageToken}`;
+  const plResp = await fetch(plUrl);
+  const plData = await plResp.json();
+  if (!plData.items) return { videos: [], nextPageToken: null };
+
+  const videoIds = plData.items.map(i => i.snippet.resourceId.videoId).join(',');
+
+  const vUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${videoIds}&key=${apiKey}`;
+  const vResp = await fetch(vUrl);
+  const vData = await vResp.json();
+  if (!vData.items) return { videos: [], nextPageToken: null };
+
+  const videos = vData.items.map(item => ({
+    id: item.id,
+    title: item.snippet.title,
+    thumbnail: item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url || '',
+    channelName: item.snippet.channelTitle,
+    duration: formatDuration(item.contentDetails.duration),
+    views: formatViews(parseInt(item.statistics?.viewCount) || 0),
+    publishedAt: item.snippet.publishedAt,
+  }));
+
+  return { videos, nextPageToken: plData.nextPageToken || null };
+}
+
+async function fetchChannelVideos(channelId, apiKey) {
+  const uploadsId = await getUploadsPlaylistId(channelId, apiKey);
+  if (!uploadsId) return [];
+  state._uploadsPlaylistId = uploadsId;
+  const result = await fetchVideoPage(uploadsId, apiKey, null);
+  state._nextPageToken = result.nextPageToken;
+  return result.videos;
+}
+
+async function loadMoreVideos() {
+  if (!state._nextPageToken || !state._uploadsPlaylistId || state._loadingMore) return;
+  state._loadingMore = true;
+  render();
+
+  try {
+    const apiKey = state.config?.youtube_api_key || loadLocalConfig()?.apiKey;
+    const result = await fetchVideoPage(state._uploadsPlaylistId, apiKey, state._nextPageToken);
+    state.channelVideos = [...state.channelVideos, ...result.videos];
+    state._nextPageToken = result.nextPageToken;
+  } catch (err) {
+    state.error = 'Failed to load more: ' + err.message;
+  }
+
+  state._loadingMore = false;
+  render();
+}
+
+function formatDuration(iso) {
+  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!m) return '';
+  const hrs = m[1] ? m[1] + ':' : '';
+  const mins = m[2] ? m[2].padStart(hrs ? 2 : 1, '0') : '0';
+  const secs = m[3] ? m[3].padStart(2, '0') : '00';
+  return hrs + mins + ':' + secs;
+}
+
+function formatViews(n) {
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
+  return n.toString();
+}
+
+// --- HISTORY ---
+async function logWatch(video, sheetId) {
+  // Save to localStorage
+  try {
+    const history = JSON.parse(localStorage.getItem('mytube_history') || '[]');
+    history.unshift({
+      timestamp: new Date().toISOString(),
+      video_id: video.id,
+      title: video.title,
+      channel_name: video.channelName || '',
+    });
+    // Keep last 200 entries
+    localStorage.setItem('mytube_history', JSON.stringify(history.slice(0, 200)));
+  } catch {}
+
+  // Append to Google Sheet (best-effort, requires write access via Apps Script web app)
+  // This is a future enhancement — for POC, localStorage is sufficient
+}
+
+// --- RENDER ---
+function render() {
+  const root = $('#root');
+  root.innerHTML = '';
+
+  switch (state.screen) {
+    case 'loading': root.appendChild(renderLoading()); break;
+    case 'setup': root.appendChild(renderSetup()); break;
+    case 'home': root.appendChild(renderHome()); break;
+    case 'channel': root.appendChild(renderChannel()); break;
+    case 'player': root.appendChild(renderPlayer()); break;
+  }
+}
+
+function renderLoading() {
+  return h('div', { className: 'loading', style: { minHeight: '100dvh' } },
+    h('div', { className: 'loading-dot' }),
+    h('div', {}, 'Loading...')
+  );
+}
+
+function renderSetup() {
+  const wrap = h('div', { className: 'setup-screen' });
+  wrap.appendChild(h('h1', {}, 'My', h('span', {}, 'Tube')));
+  wrap.appendChild(h('p', {}, 'A safe, curated YouTube experience for your kids.\nConnect your Google Sheet to get started.'));
+
+  const f1 = h('div', { className: 'setup-field' });
+  f1.appendChild(h('label', {}, 'Google Sheet ID'));
+  const input1 = h('input', {
+    type: 'text',
+    placeholder: 'e.g. 1aBcDeFgHiJkLmNoPqRsT...',
+    id: 'setup-sheet-id',
+    value: state._setupSheetId || '',
+    onInput: (e) => { state._setupSheetId = e.target.value; },
+  });
+  f1.appendChild(input1);
+  wrap.appendChild(f1);
+
+  const f2 = h('div', { className: 'setup-field' });
+  f2.appendChild(h('label', {}, 'YouTube API Key'));
+  const input2 = h('input', {
+    type: 'text',
+    placeholder: 'AIza...',
+    id: 'setup-api-key',
+    value: state._setupApiKey || '',
+    onInput: (e) => { state._setupApiKey = e.target.value; },
+  });
+  f2.appendChild(input2);
+  wrap.appendChild(f2);
+
+  const btn = h('button', {
+    className: 'setup-btn',
+    onClick: handleSetupSubmit,
+  }, 'Connect');
+  wrap.appendChild(btn);
+
+  if (state.error) {
+    wrap.appendChild(h('div', { className: 'error-msg', style: { marginTop: '16px' } },
+      h('strong', {}, 'Error: '), state.error
+    ));
+  }
+
+  wrap.appendChild(h('div', { className: 'setup-hint' },
+    'Find your Sheet ID in the URL: docs.google.com/spreadsheets/d/',
+    h('code', {}, 'THIS_PART'),
+    '/edit',
+    h('br', {}),
+    h('br', {}),
+    'Make sure your sheet is published: File → Share → Publish to web'
+  ));
+
+  return wrap;
+}
+
+function renderHome() {
+  const app = h('div', { className: 'app' });
+
+  // Header
+  const appName = state.config?.app_name || 'MyTube';
+  const nameParts = appName.includes('MyTube')
+    ? appName.split('MyTube')
+    : [appName, ''];
+
+  const header = h('div', { className: 'header' });
+  const h1 = h('h1', {});
+  if (nameParts[0]) h1.appendChild(document.createTextNode(nameParts[0]));
+  if (appName.includes('MyTube')) {
+    h1.appendChild(document.createTextNode('My'));
+    h1.appendChild(h('span', {}, 'Tube'));
+  } else {
+    h1.textContent = appName;
+  }
+  header.appendChild(h1);
+
+  const actions = h('div', { className: 'header-actions' });
+  const refreshBtn = h('button', {
+    className: 'icon-btn',
+    onClick: handleRefresh,
+    title: 'Refresh',
+  }, '↻');
+  actions.appendChild(refreshBtn);
+  const settingsBtn = h('button', {
+    className: 'icon-btn',
+    onClick: handleReset,
+    title: 'Settings',
+    style: { fontSize: '14px' },
+  }, '⚙');
+  actions.appendChild(settingsBtn);
+  header.appendChild(actions);
+  app.appendChild(header);
+
+  // Tabs
+  const tabs = h('div', { className: 'tabs' });
+  const channelTab = h('button', {
+    className: `tab ${state.activeTab === 'channels' ? 'active' : ''}`,
+    onClick: () => { state.activeTab = 'channels'; render(); },
+  }, '📺 Channels');
+  const bonusTab = h('button', {
+    className: `tab ${state.activeTab === 'bonus' ? 'active' : ''}`,
+    onClick: () => { state.activeTab = 'bonus'; render(); },
+  }, '⭐ Bonus');
+  tabs.appendChild(channelTab);
+  tabs.appendChild(bonusTab);
+  app.appendChild(tabs);
+
+  // Content
+  const content = h('div', { className: 'content' });
+
+  if (state.activeTab === 'channels') {
+    if (state.channels.length === 0) {
+      content.appendChild(h('div', { className: 'empty-state' },
+        h('div', { className: 'emoji' }, '📺'),
+        h('div', {}, 'No channels yet!\nAsk a parent to add some in the Google Sheet.')
+      ));
+    } else {
+      const grid = h('div', { className: 'channel-grid' });
+      for (const ch of state.channels) {
+        const card = h('div', { className: 'channel-card', onClick: () => handleChannelTap(ch) });
+        if (ch.thumbnail) {
+          card.appendChild(h('img', { className: 'channel-thumb', src: ch.thumbnail, alt: ch.name, loading: 'lazy' }));
+        } else {
+          card.appendChild(h('div', { className: 'channel-thumb', style: { display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px' } }, '📺'));
+        }
+        card.appendChild(h('div', { className: 'channel-name' }, ch.name));
+        grid.appendChild(card);
+      }
+      content.appendChild(grid);
+    }
+  } else {
+    // Bonus tab
+    if (state.bonus.length === 0) {
+      content.appendChild(h('div', { className: 'empty-state' },
+        h('div', { className: 'emoji' }, '⭐'),
+        h('div', {}, 'No bonus videos yet!\nAsk a parent to add some in the Google Sheet.')
+      ));
+    } else {
+      content.appendChild(h('div', { className: 'section-label' }, 'Hand-picked videos'));
+      for (const v of state.bonus) {
+        content.appendChild(renderVideoItem(v, () => handlePlayVideo(v)));
+      }
+    }
+  }
+
+  app.appendChild(content);
+  return app;
+}
+
+function renderChannel() {
+  const ch = state.selectedChannel;
+  const app = h('div', { className: 'app' });
+
+  // Back bar
+  const backBar = h('div', { className: 'back-bar' });
+  backBar.appendChild(h('button', { className: 'back-btn', onClick: handleBack }, '← Back'));
+  app.appendChild(backBar);
+
+  // Channel header
+  const chHeader = h('div', { className: 'channel-header' });
+  if (ch.thumbnail) {
+    chHeader.appendChild(h('img', { src: ch.thumbnail, alt: ch.name }));
+  }
+  const chInfo = h('div', {});
+  chInfo.appendChild(h('div', { className: 'channel-header-name' }, ch.name));
+  if (ch.videoCount) {
+    chInfo.appendChild(h('div', { className: 'channel-header-meta' }, ch.videoCount + ' videos'));
+  }
+  chHeader.appendChild(chInfo);
+  app.appendChild(chHeader);
+
+  // Videos
+  const content = h('div', { className: 'content' });
+
+  if (state.loading) {
+    content.appendChild(h('div', { className: 'loading' },
+      h('div', { className: 'loading-dot' }),
+      h('div', {}, 'Loading videos...')
+    ));
+  } else if (state.error) {
+    content.appendChild(h('div', { className: 'error-msg' },
+      h('strong', {}, 'Error: '), state.error
+    ));
+  } else if (state.channelVideos.length === 0) {
+    content.appendChild(h('div', { className: 'empty-state' },
+      h('div', { className: 'emoji' }, '🤷'),
+      h('div', {}, 'No videos found')
+    ));
+  } else {
+    content.appendChild(h('div', { className: 'section-label' }, 'Latest Videos'));
+    for (const v of state.channelVideos) {
+      content.appendChild(renderVideoItem(v, () => handlePlayVideo(v)));
+    }
+
+    // Load more button
+    if (state._nextPageToken) {
+      if (state._loadingMore) {
+        content.appendChild(h('div', { className: 'loading', style: { padding: '24px' } },
+          h('div', { className: 'loading-dot' }),
+          h('div', {}, 'Loading more...')
+        ));
+      } else {
+        const loadMoreBtn = h('button', {
+          onClick: loadMoreVideos,
+          style: {
+            width: '100%',
+            padding: '14px',
+            borderRadius: '12px',
+            border: '1px solid var(--card-border)',
+            background: 'var(--card)',
+            color: 'var(--accent)',
+            fontFamily: "'Nunito', sans-serif",
+            fontSize: '15px',
+            fontWeight: '700',
+            cursor: 'pointer',
+            marginTop: '12px',
+            marginBottom: '20px',
+          },
+        }, '↓ Load more videos');
+        content.appendChild(loadMoreBtn);
+      }
+    }
+  }
+
+  app.appendChild(content);
+  return app;
+}
+
+function renderVideoItem(video, onClick) {
+  const item = h('div', { className: 'video-item', onClick });
+
+  const thumbWrap = h('div', { className: 'video-thumb-wrap' });
+  if (video.thumbnail) {
+    thumbWrap.appendChild(h('img', { src: video.thumbnail, alt: '', loading: 'lazy' }));
+  }
+  if (video.duration) {
+    thumbWrap.appendChild(h('div', { className: 'video-duration' }, video.duration));
+  }
+  item.appendChild(thumbWrap);
+
+  const info = h('div', { className: 'video-info' });
+  info.appendChild(h('div', { className: 'video-title' }, video.title));
+  const meta = [];
+  if (video.channelName) meta.push(video.channelName);
+  if (video.views) meta.push(video.views + ' views');
+  if (meta.length) info.appendChild(h('div', { className: 'video-meta' }, meta.join(' · ')));
+  item.appendChild(info);
+
+  return item;
+}
+
+function renderPlayer() {
+  const v = state.playingVideo;
+  const screen = h('div', { className: 'player-screen' });
+
+  const top = h('div', { className: 'player-top' });
+  top.appendChild(h('button', { className: 'player-close', onClick: handleBack }, '← Back'));
+  screen.appendChild(top);
+
+  const videoWrap = h('div', { className: 'player-video' });
+  const iframe = h('iframe', {
+    src: `https://www.youtube.com/embed/${v.id}?autoplay=1&rel=0&modestbranding=1&playsinline=1`,
+    allow: 'autoplay; encrypted-media; picture-in-picture',
+    allowfullscreen: 'true',
+  });
+  videoWrap.appendChild(iframe);
+  screen.appendChild(videoWrap);
+
+  const info = h('div', { className: 'player-info' });
+  info.appendChild(h('div', { className: 'player-title' }, v.title));
+  const meta = [];
+  if (v.channelName) meta.push(v.channelName);
+  if (v.duration) meta.push(v.duration);
+  if (meta.length) info.appendChild(h('div', { className: 'player-meta' }, meta.join(' · ')));
+  screen.appendChild(info);
+
+  return screen;
+}
+
+// --- EVENT HANDLERS ---
+async function handleSetupSubmit() {
+  const sheetId = (state._setupSheetId || '').trim();
+  const apiKey = (state._setupApiKey || '').trim();
+
+  if (!sheetId) { state.error = 'Please enter your Google Sheet ID'; render(); return; }
+  if (!apiKey) { state.error = 'Please enter your YouTube API key'; render(); return; }
+
+  state.error = null;
+  state.screen = 'loading';
+  render();
+
+  try {
+    const config = await fetchConfig(sheetId);
+    config.sheet_id = sheetId;
+    // Use API key from setup form (overrides sheet config)
+    config.youtube_api_key = apiKey;
+
+    const channels = await fetchChannels(sheetId);
+    const bonus = await fetchBonus(sheetId);
+
+    saveLocalConfig({ sheetId, apiKey });
+
+    // Apply theme color if set
+    if (config.theme_color) {
+      document.documentElement.style.setProperty('--accent', config.theme_color);
+    }
+
+    state.config = config;
+    state.channels = channels;
+    state.bonus = bonus;
+    state.screen = 'home';
+    state.error = null;
+  } catch (err) {
+    state.error = 'Could not connect to sheet. Make sure it\'s published to web and the ID is correct.';
+    state.screen = 'setup';
+  }
+
+  render();
+}
+
+async function handleRefresh() {
+  const btn = document.querySelector('.icon-btn');
+  if (btn) { btn.classList.add('spinning'); setTimeout(() => btn.classList.remove('spinning'), 800); }
+
+  try {
+    const sheetId = state.config?.sheet_id;
+    if (!sheetId) return;
+
+    const config = await fetchConfig(sheetId);
+    config.sheet_id = sheetId;
+    const localCfg = loadLocalConfig();
+    config.youtube_api_key = localCfg?.apiKey || config.youtube_api_key;
+
+    const channels = await fetchChannels(sheetId);
+    const bonus = await fetchBonus(sheetId);
+
+    if (config.theme_color) {
+      document.documentElement.style.setProperty('--accent', config.theme_color);
+    }
+
+    state.config = config;
+    state.channels = channels;
+    state.bonus = bonus;
+    state.error = null;
+  } catch (err) {
+    state.error = 'Refresh failed: ' + err.message;
+  }
+
+  render();
+}
+
+async function handleChannelTap(channel) {
+  state.selectedChannel = channel;
+  state.channelVideos = [];
+  state.screen = 'channel';
+  state.loading = true;
+  state.error = null;
+  render();
+
+  try {
+    const apiKey = state.config?.youtube_api_key || loadLocalConfig()?.apiKey;
+    if (!apiKey) throw new Error('No API key');
+
+    state.channelVideos = await fetchChannelVideos(channel.id, apiKey);
+    state.loading = false;
+  } catch (err) {
+    state.error = err.message;
+    state.loading = false;
+  }
+
+  render();
+}
+
+function handlePlayVideo(video) {
+  state.playingVideo = video;
+  state.screen = 'player';
+  render();
+  logWatch(video, state.config?.sheet_id);
+}
+
+function handleBack() {
+  if (state.screen === 'player') {
+    if (state.selectedChannel) {
+      state.screen = 'channel';
+    } else {
+      state.screen = 'home';
+    }
+    state.playingVideo = null;
+  } else if (state.screen === 'channel') {
+    state.screen = 'home';
+    state.selectedChannel = null;
+    state.channelVideos = [];
+  }
+  render();
+}
+
+function handleReset() {
+  if (confirm('Reset MyTube setup? You will need to re-enter your Sheet ID and API key.')) {
+    localStorage.removeItem(STORAGE_KEY);
+    state = {
+      screen: 'setup',
+      config: null,
+      channels: [],
+      bonus: [],
+      activeTab: 'channels',
+      selectedChannel: null,
+      channelVideos: [],
+      playingVideo: null,
+      loading: false,
+      error: null,
+      _nextPageToken: null,
+      _uploadsPlaylistId: null,
+      _loadingMore: false,
+    };
+    render();
+  }
+}
+
+// --- INIT ---
+async function init() {
+  const saved = loadLocalConfig();
+  if (saved && saved.sheetId && saved.apiKey) {
+    state._setupSheetId = saved.sheetId;
+    state._setupApiKey = saved.apiKey;
+    await handleSetupSubmit();
+  } else {
+    state.screen = 'setup';
+    render();
+  }
+}
+
+init();
+</script>
+</body>
+</html>
