@@ -183,37 +183,56 @@
     -webkit-overflow-scrolling: touch;
     padding: 0 16px calc(var(--safe-bottom) + 16px);
   }
+  @media (min-width: 600px) {
+    .content { padding: 0 24px calc(var(--safe-bottom) + 24px); }
+  }
+  @media (min-width: 900px) {
+    .content { padding: 0 40px calc(var(--safe-bottom) + 24px); max-width: 1200px; margin: 0 auto; }
+  }
 
   /* Channel grid */
   .channel-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  @media (min-width: 600px) {
+    .channel-grid { grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  }
+  @media (min-width: 900px) {
+    .channel-grid { grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  }
+  @media (min-width: 1200px) {
+    .channel-grid { grid-template-columns: repeat(6, 1fr); gap: 16px; }
   }
   .channel-card {
-    border-radius: 16px;
-    padding: 16px;
+    border-radius: 14px;
+    padding: 12px 8px;
     cursor: pointer;
     background: var(--card);
     border: 1px solid var(--card-border);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    min-height: 130px;
+    gap: 8px;
+    aspect-ratio: 1 / 1;
+    justify-content: center;
     transition: all 0.15s;
     -webkit-tap-highlight-color: transparent;
   }
   .channel-card:active { transform: scale(0.96); background: rgba(255,255,255,0.07); }
   .channel-thumb {
-    width: 64px;
-    height: 64px;
-    border-radius: 32px;
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
     object-fit: cover;
     background: rgba(255,255,255,0.05);
   }
+  @media (min-width: 600px) {
+    .channel-thumb { width: 72px; height: 72px; border-radius: 36px; }
+  }
   .channel-name {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 700;
     text-align: center;
     line-height: 1.2;
@@ -221,6 +240,10 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    word-break: break-word;
+  }
+  @media (min-width: 600px) {
+    .channel-name { font-size: 13px; }
   }
 
   /* Video list */
@@ -518,6 +541,44 @@ async function fetchChannels(sheetId) {
   }));
 }
 
+// Refresh thumbnails from YouTube API (only called if some fail to load)
+async function refreshThumbnails(channels, apiKey) {
+  if (!apiKey || channels.length === 0) return channels;
+  try {
+    const ids = channels.map(c => c.id).join(',');
+    const url = `https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${ids}&key=${apiKey}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (data.items) {
+      const thumbMap = {};
+      for (const item of data.items) {
+        thumbMap[item.id] = item.snippet.thumbnails.medium?.url
+          || item.snippet.thumbnails.default?.url || '';
+      }
+      for (const ch of channels) {
+        if (thumbMap[ch.id]) ch.thumbnail = thumbMap[ch.id];
+      }
+    }
+  } catch (e) { /* fail silently, keep sheet thumbnails */ }
+  return channels;
+}
+
+// Self-healing: track broken thumbnails, refresh once if any fail
+let _brokenThumbCount = 0;
+let _thumbsRefreshed = false;
+function onThumbError(channelId) {
+  _brokenThumbCount++;
+  // If 2+ thumbnails fail and we haven't already refreshed, do it
+  if (_brokenThumbCount >= 2 && !_thumbsRefreshed) {
+    _thumbsRefreshed = true;
+    const apiKey = state.config?.youtube_api_key || loadLocalConfig()?.apiKey;
+    refreshThumbnails(state.channels, apiKey).then(() => {
+      _brokenThumbCount = 0;
+      render();
+    });
+  }
+}
+
 async function fetchBonus(sheetId) {
   const rows = await fetchSheetTab(sheetId, 'Bonus');
   return rows.filter(r => r.video_id && r.title).map(r => ({
@@ -765,9 +826,23 @@ function renderHome() {
       for (const ch of state.channels) {
         const card = h('div', { className: 'channel-card', onClick: () => handleChannelTap(ch) });
         if (ch.thumbnail) {
-          card.appendChild(h('img', { className: 'channel-thumb', src: ch.thumbnail, alt: ch.name, loading: 'lazy' }));
+          const img = h('img', { className: 'channel-thumb', src: ch.thumbnail, alt: ch.name, loading: 'lazy' });
+          img.onerror = function() {
+            onThumbError(ch.id);
+            const fallback = h('div', { className: 'channel-thumb', style: {
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '22px', fontWeight: '900', color: '#fff',
+              background: `hsl(${ch.name.charCodeAt(0) * 7 % 360}, 55%, 45%)`,
+            } }, ch.name.charAt(0).toUpperCase());
+            this.replaceWith(fallback);
+          };
+          card.appendChild(img);
         } else {
-          card.appendChild(h('div', { className: 'channel-thumb', style: { display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px' } }, '📺'));
+          card.appendChild(h('div', { className: 'channel-thumb', style: {
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '22px', fontWeight: '900', color: '#fff',
+            background: `hsl(${ch.name.charCodeAt(0) * 7 % 360}, 55%, 45%)`,
+          } }, ch.name.charAt(0).toUpperCase()));
         }
         card.appendChild(h('div', { className: 'channel-name' }, ch.name));
         grid.appendChild(card);
@@ -944,6 +1019,10 @@ async function handleSetupSubmit() {
     const channels = await fetchChannels(sheetId);
     const bonus = await fetchBonus(sheetId);
 
+    // Reset self-healing state
+    _brokenThumbCount = 0;
+    _thumbsRefreshed = false;
+
     saveLocalConfig({ sheetId, apiKey });
 
     // Apply theme color if set
@@ -979,6 +1058,10 @@ async function handleRefresh() {
 
     const channels = await fetchChannels(sheetId);
     const bonus = await fetchBonus(sheetId);
+
+    // Reset self-healing state
+    _brokenThumbCount = 0;
+    _thumbsRefreshed = false;
 
     if (config.theme_color) {
       document.documentElement.style.setProperty('--accent', config.theme_color);
